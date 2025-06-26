@@ -1,8 +1,8 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { AnyDocument, ResourceType, Fundstelle, Deskriptor, Verkuendung, Urheber, Vorgangsbezug, Ressort, Drucksache, Plenarprotokoll, Person, Vorgang, Aktivitaet, GeminiSearchResult, Inkrafttreten, VorgangVerlinkung } from './types';
 import { RESOURCE_CONFIG, BookOpenIcon, NewspaperIcon, FileTextIcon, UsersIcon, ZapIcon, SearchIcon } from './constants';
 import { fetchDocuments } from './services/api';
-import { generateSearchParameters } from './services/gemini';
+import { generateSearchParameters, setGeminiApiKey } from './services/gemini';
 
 // UI Components
 
@@ -283,8 +283,17 @@ const App: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [selectedDoc, setSelectedDoc] = useState<AnyDocument | null>(null);
     const [naturalQuery, setNaturalQuery] = useState('');
+    const [geminiKeyInput, setGeminiKeyInput] = useState(() => localStorage.getItem('geminiApiKey') || '');
     const [isGeminiLoading, setIsGeminiLoading] = useState(false);
     const [hasSearched, setHasSearched] = useState(false);
+
+    useEffect(() => {
+        const saved = localStorage.getItem('geminiApiKey') || process.env.GEMINI_API_KEY || process.env.API_KEY;
+        if (saved) {
+            setGeminiApiKey(saved);
+            if (!geminiKeyInput) setGeminiKeyInput(saved);
+        }
+    }, []);
 
     const changeResource = (resType: ResourceType) => {
         setActiveResource(resType);
@@ -342,6 +351,13 @@ const App: React.FC = () => {
     const handleManualSearch = () => {
         const apiFilters = prepareApiFilters(filters, activeResource);
         performSearch(activeResource, apiFilters, false);
+    };
+
+    const handleGeminiKeySubmit = () => {
+        if (geminiKeyInput) {
+            localStorage.setItem('geminiApiKey', geminiKeyInput);
+            setGeminiApiKey(geminiKeyInput);
+        }
     };
 
     const handleLoadMore = () => {
@@ -487,9 +503,23 @@ const App: React.FC = () => {
                     <p className="text-slate-400 mb-4 text-sm max-w-2xl">
                         Beschreiben Sie, was Sie finden möchten. Die KI wählt die passenden Filter für Sie aus und füllt das Formular unten aus.
                     </p>
+                    <div className="flex gap-2 mb-2">
+                        <input
+                            type="password"
+                            value={geminiKeyInput}
+                            onChange={(e) => setGeminiKeyInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleGeminiKeySubmit()}
+                            placeholder="Gemini API Key"
+                            className="w-full bg-slate-800 border border-slate-600 rounded-md p-2 text-sm text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition"
+                        />
+                        <button
+                            onClick={handleGeminiKeySubmit}
+                            className="bg-slate-700 text-white font-bold px-4 rounded-md hover:bg-slate-600 transition"
+                        >Speichern</button>
+                    </div>
                     <div className="flex gap-2">
-                        <input 
-                            type="text" 
+                        <input
+                            type="text"
                             value={naturalQuery}
                             onChange={(e) => setNaturalQuery(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleGeminiSearch()}
