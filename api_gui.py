@@ -15,35 +15,53 @@ class ApiGui(tk.Tk):
 
     def create_widgets(self):
         api_frame = ttk.Frame(self)
-        api_frame.pack(fill='x', padx=10, pady=5)
-        ttk.Label(api_frame, text="API Key:").pack(side='left')
-        self.api_entry = ttk.Entry(api_frame, width=60, show='*')
-        self.api_entry.pack(side='left', padx=5)
+        api_frame.pack(fill="x", padx=10, pady=5)
+        ttk.Label(api_frame, text="API Key:").pack(side="left")
+        self.api_entry = ttk.Entry(api_frame, width=60, show="*")
+        self.api_entry.pack(side="left", padx=5)
 
-        endpoint_frame = ttk.Frame(self)
-        endpoint_frame.pack(fill='x', padx=10, pady=5)
-        ttk.Label(endpoint_frame, text="Endpoint path:").pack(side='left')
-        self.endpoint_entry = ttk.Entry(endpoint_frame, width=30)
-        self.endpoint_entry.pack(side='left', padx=5)
-        self.endpoint_entry.insert(0, '/vorgang')
+        main_frame = ttk.Frame(self)
+        main_frame.pack(fill="x", padx=10, pady=5)
 
-        ttk.Label(endpoint_frame, text="Query (key=value&...):").pack(side='left')
-        self.query_entry = ttk.Entry(endpoint_frame, width=40)
-        self.query_entry.pack(side='left', padx=5)
+        ttk.Label(main_frame, text="Resource:").pack(side="left")
+        self.resource_var = tk.StringVar()
+        resources = [
+            "vorgang",
+            "vorgangsposition",
+            "drucksache",
+            "drucksache-text",
+            "plenarprotokoll",
+            "plenarprotokoll-text",
+            "aktivitaet",
+            "person",
+        ]
+        self.resource_combo = ttk.Combobox(main_frame, textvariable=self.resource_var, values=resources, width=20, state="readonly")
+        self.resource_combo.pack(side="left", padx=5)
+        self.resource_combo.current(0)
 
-        ttk.Button(endpoint_frame, text="Fetch", command=self.fetch).pack(side='left', padx=5)
+        ttk.Label(main_frame, text="ID (optional):").pack(side="left")
+        self.id_entry = ttk.Entry(main_frame, width=10)
+        self.id_entry.pack(side="left", padx=5)
 
-        self.output = scrolledtext.ScrolledText(self, wrap='word')
-        self.output.pack(fill='both', expand=True, padx=10, pady=10)
+        ttk.Label(main_frame, text="Query (key=value&...):").pack(side="left")
+        self.query_entry = ttk.Entry(main_frame, width=40)
+        self.query_entry.pack(side="left", padx=5)
+
+        ttk.Button(main_frame, text="Fetch", command=self.fetch).pack(side="left", padx=5)
+
+        self.output = scrolledtext.ScrolledText(self, wrap="word")
+        self.output.pack(fill="both", expand=True, padx=10, pady=10)
 
     def fetch(self):
         api_key = self.api_entry.get().strip()
         if not api_key:
             messagebox.showwarning("API Key missing", "Please enter your API key.")
             return
-        endpoint = self.endpoint_entry.get().strip()
-        if not endpoint.startswith('/'):
-            endpoint = '/' + endpoint
+        resource = self.resource_var.get()
+        endpoint = f"/{resource}"
+        item_id = self.id_entry.get().strip()
+        if item_id:
+            endpoint += f"/{item_id}"
         query_str = self.query_entry.get().strip()
         params = dict(urllib.parse.parse_qsl(query_str, keep_blank_values=True))
         url = BASE_URL + endpoint
