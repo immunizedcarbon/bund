@@ -15,10 +15,10 @@ Below is a step-by-step guide using a Python virtual environment. The commands c
    sudo apt install python3 python3-venv git -y
    ```
 
-2. **Download the project** (replace the URL with the location of this repository if different):
+2. **Download the project** :
 
    ```bash
-   git clone https://example.com/bund.git
+   git clone https://github.com/immunizedcarbon/bund.git
    cd bund
    ```
 
