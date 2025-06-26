@@ -2,9 +2,18 @@ import { GoogleGenAI } from "@google/genai";
 import { RESOURCE_CONFIG } from '../constants';
 import { GeminiSearchResult, ResourceType } from "../types";
 
-// NOTE: The API key is sourced from `process.env.API_KEY` which is a placeholder
-// for the build environment to inject the actual key.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+let currentApiKey: string | undefined =
+  (typeof process !== 'undefined' && (process.env.GEMINI_API_KEY || process.env.API_KEY)) ||
+  undefined;
+
+let ai: GoogleGenAI | null = currentApiKey
+  ? new GoogleGenAI({ apiKey: currentApiKey })
+  : null;
+
+export const setGeminiApiKey = (key: string) => {
+  currentApiKey = key;
+  ai = new GoogleGenAI({ apiKey: key });
+};
 
 const systemInstruction = `You are a helpful assistant for the German Parliament's (Bundestag) DIP API. Your task is to convert a user's natural language query into a structured JSON object that can be used to query the API.
 
@@ -38,6 +47,9 @@ Now, process the user's query.
 `;
 
 export const generateSearchParameters = async (query: string): Promise<GeminiSearchResult> => {
+    if (!ai) {
+        throw new Error('Gemini API-Key fehlt. Bitte geben Sie einen gültigen Schlüssel ein.');
+    }
     if (!query) {
         // Return a default empty state if the query is empty
         return {
