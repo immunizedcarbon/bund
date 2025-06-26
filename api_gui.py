@@ -5,6 +5,8 @@ import json
 import urllib.parse
 
 BASE_URL = "https://search.dip.bundestag.de/api/v1"
+# Public API key provided by the Bundestag API documentation
+API_KEY = "OSOegLs.PR2lwJ1dwCeje9vTj7FPOt3hvpYKtwKkhw"
 
 class ApiGui(tk.Tk):
     def __init__(self):
@@ -17,8 +19,10 @@ class ApiGui(tk.Tk):
         api_frame = ttk.Frame(self)
         api_frame.pack(fill="x", padx=10, pady=5)
         ttk.Label(api_frame, text="API Key:").pack(side="left")
-        self.api_entry = ttk.Entry(api_frame, width=60, show="*")
+        self.api_entry = ttk.Entry(api_frame, width=60)
         self.api_entry.pack(side="left", padx=5)
+        # Pre-fill the entry with the public API key so the user can start immediately
+        self.api_entry.insert(0, API_KEY)
 
         main_frame = ttk.Frame(self)
         main_frame.pack(fill="x", padx=10, pady=5)
@@ -53,10 +57,7 @@ class ApiGui(tk.Tk):
         self.output.pack(fill="both", expand=True, padx=10, pady=10)
 
     def fetch(self):
-        api_key = self.api_entry.get().strip()
-        if not api_key:
-            messagebox.showwarning("API Key missing", "Please enter your API key.")
-            return
+        api_key = self.api_entry.get().strip() or API_KEY
         resource = self.resource_var.get()
         endpoint = f"/{resource}"
         item_id = self.id_entry.get().strip()
