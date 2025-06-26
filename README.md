@@ -11,7 +11,7 @@ Dieses Projekt ist eine kleine Web-Oberfläche, um in den Dokumenten des Deutsch
 
 1. Repository klonen (falls noch nicht geschehen):
    ```bash
-   git clone <REPO_URL>
+   git clone https://github.com/immunizedcarbon/bund
    cd bund
    ```
 2. Abhängigkeiten installieren:
