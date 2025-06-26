@@ -1,0 +1,5 @@
+{
+  "name": "Copy of Bundestag DIP Explorer",
+  "description": "An application to explore and search documents from the German Parliament's Documentation and Information System (DIP).",
+  "requestFramePermissions": []
+}
