@@ -1,0 +1,1 @@
+Trigger the isolated Decimen APK build and exact Pixel 9a, Pixel 8a, and Galaxy Tab S5e LTE compatibility matrix.
