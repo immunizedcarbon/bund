@@ -34,27 +34,17 @@ jobs:
         with:
           gradle-version: '9.5.0'
       - uses: android-actions/setup-android@v3
-      - name: Diagnose and install Android 17 compile SDK
+      - name: Install Android 17 compile SDK
         shell: bash
         run: |
           set -euo pipefail
           SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          mkdir -p sdk-diagnostics
-          "$SDKMANAGER" --version | tee sdk-diagnostics/sdkmanager-version.txt
-          "$SDKMANAGER" --list --channel=3 > sdk-diagnostics/sdk-list.txt
-          grep -E 'android-37|build-tools;36\.0\.0|cmdline-tools;latest' sdk-diagnostics/sdk-list.txt \
-            | tee sdk-diagnostics/sdk37-packages.txt || true
           yes | "$SDKMANAGER" --licenses --channel=3 >/dev/null || true
-          "$SDKMANAGER" --channel=3 "cmdline-tools;latest" || true
-          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          "$SDKMANAGER" --channel=3 platform-tools "platforms;android-37" "build-tools;36.0.0"
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: sdk37-diagnostics
-          path: sdk-diagnostics
-          if-no-files-found: warn
-          retention-days: 7
+          "$SDKMANAGER" --channel=3 \
+            platform-tools \
+            "platforms;android-37.0" \
+            "build-tools;37.0.0" \
+            "build-tools;36.0.0"
       - name: Audit and build
         shell: bash
         env:
@@ -78,7 +68,7 @@ jobs:
         include:
           - label: Pixel 9a · Android 17
             profile: pixel9a
-            api: '37'
+            api: '37.0'
             image: google_apis
             width: '1080'
             height: '2424'
@@ -87,7 +77,7 @@ jobs:
             rotation: '0'
           - label: Pixel 8a · Android 17
             profile: pixel8a
-            api: '37'
+            api: '37.0'
             image: google_apis
             width: '1080'
             height: '2400'
