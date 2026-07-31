@@ -95,6 +95,18 @@ jobs:
         run: |
           unset GITHUB_WORKSPACE
           bash ci/build-final.sh
+      - name: Upload build diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: decimen-build-diagnostics
+          path: |
+            source/final-work/android/app/build/reports
+            source/final-work/android/app/build/intermediates/lint_intermediate_text_report
+            source/final-work/npm-audit.json
+            source/final-work/semgrep.json
+          if-no-files-found: warn
+          retention-days: 7
       - uses: actions/upload-artifact@v4
         with:
           name: decimen-final-verified
