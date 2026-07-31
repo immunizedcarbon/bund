@@ -1,4 +1,4 @@
-name: Decimen exact device verification
+name: Decimen WebView diagnosis
 
 on:
   pull_request:
@@ -13,48 +13,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  device:
-    name: ${{ matrix.label }}
+  diagnose:
+    name: Galaxy Tab S5e · direct WebView diagnosis
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - label: Pixel 9a · Android 17
-            profile: pixel9a
-            api: '37.0'
-            image: google_apis
-            width: '1080'
-            height: '2424'
-            density: '422'
-            ram: '4096'
-            rotation: '0'
-          - label: Pixel 8a · Android 17
-            profile: pixel8a
-            api: '37.0'
-            image: google_apis
-            width: '1080'
-            height: '2400'
-            density: '430'
-            ram: '4096'
-            rotation: '0'
-          - label: Galaxy Tab S5e LTE · LineageOS 22.2 / Android 15
-            profile: tabs5e
-            api: '35'
-            image: default
-            width: '1600'
-            height: '2560'
-            density: '288'
-            ram: '3072'
-            rotation: '1'
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
         with:
           repository: immunizedcarbon/TowerD
           ref: decimen-security-review
           path: source
-      - name: Download audited signed APK set
+      - name: Download audited APK set
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -65,34 +34,28 @@ jobs:
             --repo immunizedcarbon/bund \
             --name decimen-final-verified \
             --dir source/final-artifact
-          test -s source/final-artifact/Decimen-Optical-Transfer-0.3.0-hardened.apk
           test -s source/final-artifact/app-debug.apk
-          test -s source/final-artifact/app-debug-androidTest.apk
           (cd source/final-artifact && sha256sum -c SHA256SUMS.txt)
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
-      - name: Run bounded exact device profile
+      - name: Read self-test result through WebView DevTools
         shell: bash
         working-directory: source
         env:
-          PROFILE: ${{ matrix.profile }}
-          API: ${{ matrix.api }}
-          IMAGE: ${{ matrix.image }}
-          WIDTH: ${{ matrix.width }}
-          HEIGHT: ${{ matrix.height }}
-          DENSITY: ${{ matrix.density }}
-          RAM: ${{ matrix.ram }}
-          ROTATION: ${{ matrix.rotation }}
+          PROFILE: tabs5e
+          API: '35'
+          IMAGE: default
+          RAM: '3072'
         run: |
           unset GITHUB_WORKSPACE
-          bash ci/test-device.sh
+          bash ci/diagnose-webview.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: exact-device-${{ matrix.profile }}
-          path: source/evidence-${{ matrix.profile }}
+          name: webview-diagnosis-tabs5e
+          path: source/evidence-tabs5e
           if-no-files-found: warn
           retention-days: 7
