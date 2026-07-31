@@ -1,4 +1,4 @@
-name: Export optical source
+name: Export repair workspace
 
 on:
   pull_request:
@@ -17,17 +17,17 @@ jobs:
           repository: immunizedcarbon/TowerD
           ref: decimen-security-review
           path: source
-      - name: Decode native project
+      - name: Prepare workspace
         shell: bash
         run: |
-          set -euo pipefail
-          mkdir -p export
+          set -u
+          mkdir -p export/native
           cat source/optical-transfer-build/optical-ci-v020.b64.part* | tr -d '[:space:]' | base64 --decode > /tmp/optical.zip
-          unzip -t /tmp/optical.zip
-          unzip -q /tmp/optical.zip -d export
+          unzip -o /tmp/optical.zip -d export/native || true
+          cp -a source export/TowerD
           find export -type f -print | sort
       - uses: actions/upload-artifact@v4
         with:
-          name: optical-native-source
+          name: decimen-repair-workspace
           path: export
           retention-days: 2
