@@ -34,12 +34,12 @@ jobs:
         with:
           gradle-version: '9.5.0'
       - uses: android-actions/setup-android@v3
-      - name: Install compile SDK
+      - name: Install Android 17 compile SDK
         shell: bash
         run: |
           SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" platform-tools "platforms;android-36" "build-tools;36.0.0"
+          "$SDKMANAGER" platform-tools "platforms;android-37" "build-tools;36.0.0"
       - name: Audit and build
         shell: bash
         env:
@@ -61,18 +61,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - label: Pixel 9a · Android 16
+          - label: Pixel 9a · Android 17
             profile: pixel9a
-            api: '36'
+            api: '37'
             image: google_apis
             width: '1080'
             height: '2424'
             density: '422'
             ram: '4096'
             rotation: '0'
-          - label: Pixel 8a · Android 16
+          - label: Pixel 8a · Android 17
             profile: pixel8a
-            api: '36'
+            api: '37'
             image: google_apis
             width: '1080'
             height: '2400'
