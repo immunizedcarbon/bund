@@ -47,9 +47,10 @@ jobs:
             "build-tools;36.0.0"
       - name: Audit and build
         shell: bash
-        env:
-          GITHUB_WORKSPACE: ${{ github.workspace }}/source
-        run: bash source/ci/build-final.sh
+        working-directory: source
+        run: |
+          unset GITHUB_WORKSPACE
+          bash ci/build-final.sh
       - uses: actions/upload-artifact@v4
         with:
           name: decimen-final-verified
@@ -111,8 +112,8 @@ jobs:
       - uses: android-actions/setup-android@v3
       - name: Run exact device profile
         shell: bash
+        working-directory: source
         env:
-          GITHUB_WORKSPACE: ${{ github.workspace }}/source
           PROFILE: ${{ matrix.profile }}
           API: ${{ matrix.api }}
           IMAGE: ${{ matrix.image }}
@@ -121,7 +122,9 @@ jobs:
           DENSITY: ${{ matrix.density }}
           RAM: ${{ matrix.ram }}
           ROTATION: ${{ matrix.rotation }}
-        run: bash source/ci/test-device.sh
+        run: |
+          unset GITHUB_WORKSPACE
+          bash ci/test-device.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
