@@ -1,0 +1,33 @@
+name: Export optical source
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: immunizedcarbon/TowerD
+          ref: decimen-security-review
+          path: source
+      - name: Decode native project
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p export
+          cat source/optical-transfer-build/optical-ci-v020.b64.part* | tr -d '[:space:]' | base64 --decode > /tmp/optical.zip
+          unzip -t /tmp/optical.zip
+          unzip -q /tmp/optical.zip -d export
+          find export -type f -print | sort
+      - uses: actions/upload-artifact@v4
+        with:
+          name: optical-native-source
+          path: export
+          retention-days: 2
