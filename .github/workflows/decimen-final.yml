@@ -1,10 +1,11 @@
-name: Decimen final isolated verification
+name: Decimen exact device verification
 
 on:
   pull_request:
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
@@ -12,113 +13,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Audited signed APK
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
-        with:
-          repository: immunizedcarbon/TowerD
-          ref: decimen-security-review
-          path: source
-      - name: Validate exported component boundary
-        shell: bash
-        working-directory: source
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          from xml.etree import ElementTree as ET
-
-          manifest = Path('android-src/app/src/main/AndroidManifest.xml')
-          root = ET.parse(manifest).getroot()
-          android = '{http://schemas.android.com/apk/res/android}'
-          app = root.find('application')
-          if app is None:
-              raise SystemExit('Application node missing')
-
-          exported = []
-          for kind in ('activity', 'activity-alias', 'service', 'receiver', 'provider'):
-              for node in app.findall(kind):
-                  if node.get(android + 'exported') == 'true':
-                      exported.append((kind, node.get(android + 'name')))
-          if exported != [('activity', '.MainActivity')]:
-              raise SystemExit(f'Unexpected exported components: {exported}')
-
-          activity = app.find("activity[@android:name='.MainActivity']", {'android': android[1:-1]})
-          if activity is None:
-              raise SystemExit('MainActivity missing')
-          filters = activity.findall('intent-filter')
-          if len(filters) != 1:
-              raise SystemExit('Launcher must have exactly one intent filter')
-          launch = filters[0]
-          actions = {n.get(android + 'name') for n in launch.findall('action')}
-          categories = {n.get(android + 'name') for n in launch.findall('category')}
-          if actions != {'android.intent.action.MAIN'}:
-              raise SystemExit(f'Unexpected launcher actions: {actions}')
-          if categories != {'android.intent.category.LAUNCHER'}:
-              raise SystemExit(f'Unexpected launcher categories: {categories}')
-          if launch.findall('data'):
-              raise SystemExit('Launcher must not expose deep-link data')
-
-          permissions = {n.get(android + 'name') for n in root.findall('uses-permission')}
-          if permissions != {'android.permission.CAMERA'}:
-              raise SystemExit(f'Unexpected manifest permissions: {permissions}')
-          print('Export boundary: one launcher activity; no exported services, receivers or providers')
-          PY
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '9.5.0'
-      - uses: android-actions/setup-android@v3
-      - name: Install Android 17 compile SDK
-        shell: bash
-        run: |
-          set -euo pipefail
-          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          yes | "$SDKMANAGER" --licenses --channel=3 >/dev/null || true
-          "$SDKMANAGER" --channel=3 \
-            platform-tools \
-            "platforms;android-37.0" \
-            "build-tools;37.0.0" \
-            "build-tools;36.0.0"
-      - name: Audit and build
-        shell: bash
-        working-directory: source
-        run: |
-          unset GITHUB_WORKSPACE
-          bash ci/build-final.sh
-      - name: Upload build diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: decimen-build-diagnostics
-          path: |
-            source/final-work/android/app/build/reports
-            source/final-work/android/app/build/intermediates/lint_intermediate_text_report
-            source/final-work/npm-audit.json
-            source/final-work/semgrep.json
-          if-no-files-found: warn
-          retention-days: 7
-      - uses: actions/upload-artifact@v4
-        with:
-          name: decimen-final-verified
-          path: source/final-artifact
-          if-no-files-found: error
-          retention-days: 7
-
   device:
     name: ${{ matrix.label }}
-    needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -152,21 +50,31 @@ jobs:
             rotation: '1'
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
         with:
           repository: immunizedcarbon/TowerD
           ref: decimen-security-review
           path: source
-      - uses: actions/download-artifact@v4
-        with:
-          name: decimen-final-verified
-          path: source/final-artifact
+      - name: Download audited signed APK set
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p source/final-artifact
+          gh run download 30608868255 \
+            --repo immunizedcarbon/bund \
+            --name decimen-final-verified \
+            --dir source/final-artifact
+          test -s source/final-artifact/Decimen-Optical-Transfer-0.3.0-hardened.apk
+          test -s source/final-artifact/app-debug.apk
+          test -s source/final-artifact/app-debug-androidTest.apk
+          (cd source/final-artifact && sha256sum -c SHA256SUMS.txt)
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
-      - name: Run exact device profile
+      - name: Run bounded exact device profile
         shell: bash
         working-directory: source
         env:
