@@ -1,0 +1,1 @@
+Run the final Decimen APK build and exact device compatibility matrix in isolation.
