@@ -23,6 +23,50 @@ jobs:
           repository: immunizedcarbon/TowerD
           ref: decimen-security-review
           path: source
+      - name: Validate exported component boundary
+        shell: bash
+        working-directory: source
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from xml.etree import ElementTree as ET
+
+          manifest = Path('android-src/app/src/main/AndroidManifest.xml')
+          root = ET.parse(manifest).getroot()
+          android = '{http://schemas.android.com/apk/res/android}'
+          app = root.find('application')
+          if app is None:
+              raise SystemExit('Application node missing')
+
+          exported = []
+          for kind in ('activity', 'activity-alias', 'service', 'receiver', 'provider'):
+              for node in app.findall(kind):
+                  if node.get(android + 'exported') == 'true':
+                      exported.append((kind, node.get(android + 'name')))
+          if exported != [('activity', '.MainActivity')]:
+              raise SystemExit(f'Unexpected exported components: {exported}')
+
+          activity = app.find("activity[@android:name='.MainActivity']", {'android': android[1:-1]})
+          if activity is None:
+              raise SystemExit('MainActivity missing')
+          filters = activity.findall('intent-filter')
+          if len(filters) != 1:
+              raise SystemExit('Launcher must have exactly one intent filter')
+          launch = filters[0]
+          actions = {n.get(android + 'name') for n in launch.findall('action')}
+          categories = {n.get(android + 'name') for n in launch.findall('category')}
+          if actions != {'android.intent.action.MAIN'}:
+              raise SystemExit(f'Unexpected launcher actions: {actions}')
+          if categories != {'android.intent.category.LAUNCHER'}:
+              raise SystemExit(f'Unexpected launcher categories: {categories}')
+          if launch.findall('data'):
+              raise SystemExit('Launcher must not expose deep-link data')
+
+          permissions = {n.get(android + 'name') for n in root.findall('uses-permission')}
+          if permissions != {'android.permission.CAMERA'}:
+              raise SystemExit(f'Unexpected manifest permissions: {permissions}')
+          print('Export boundary: one launcher activity; no exported services, receivers or providers')
+          PY
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
